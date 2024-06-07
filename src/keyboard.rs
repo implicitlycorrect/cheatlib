@@ -1,7 +1,7 @@
+use windows_sys::Win32::UI::Input::KeyboardAndMouse::GetAsyncKeyState;
+
 pub fn detect_keypress(virtual_key_code: i32) -> bool {
-    unsafe {
-        windows_sys::Win32::UI::Input::KeyboardAndMouse::GetAsyncKeyState(virtual_key_code) & 1 != 0
-    }
+    unsafe { GetAsyncKeyState(virtual_key_code) & 1 != 0 }
 }
 
 pub struct VirtualKeyCode;
