@@ -1,7 +1,5 @@
 use crate::*;
 
-use utilities::is_page_readable;
-
 #[cfg(feature = "internal")]
 use {std::string::FromUtf8Error, utilities::read_null_terminated_string};
 
