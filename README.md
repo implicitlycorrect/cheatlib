@@ -2,6 +2,7 @@
 Game hacking crate for windows inspired by [toy-arms](https://github.com/pseuxide/toy-arms)
 
 TODO:
+- [ ] Linux support (maybe one day)
 - [ ] Finish Process struct impl (file: src/process.rs)
 
 ## Features:
