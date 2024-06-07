@@ -111,7 +111,7 @@ impl Module {
             *((self.base_address + address) as *mut T) = value
         })
     }
-    
+
     #[cfg(feature = "external")]
     pub fn read_string(&self, address: usize) -> Result<std::string::String, FromUtf8Error> {
         todo!()
