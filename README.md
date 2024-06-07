@@ -16,7 +16,7 @@ TODO:
 default = ["internal", "patternscan"]
 ```
 
-## Simple usage (internal):
+## Usage (internal):
 ```rust
 use anyhow::Result;
 
