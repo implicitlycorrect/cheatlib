@@ -4,6 +4,7 @@ Game hacking crate for windows inspired by [toy-arms](https://github.com/pseuxid
 TODO:
 - [ ] Finish Process struct impl (file: src/process.rs)
 - [ ] Finish Module struct impl (file: src/module.rs) (feature: External)
+- [ ] Add proper documentation
 - [ ] Linux support (maybe one day)
 
 ## Features:
