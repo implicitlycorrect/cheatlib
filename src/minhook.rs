@@ -1,8 +1,8 @@
-#[cfg(all(target_os = "windows", feature = "minhook"))]
+#[cfg(all(windows, feature = "minhook"))]
 use {crate::*, minhook_sys::MH_OK};
 
 /// Initialize the MinHook library. You must call this function **EXACTLY ONCE** at the end of your program.
-#[cfg(all(target_os = "windows", feature = "minhook"))]
+#[cfg(all(windows, feature = "minhook"))]
 pub fn initialize() -> Result<()> {
     let status = unsafe { minhook_sys::MH_Initialize() };
     if status != MH_OK {
@@ -15,7 +15,7 @@ pub fn initialize() -> Result<()> {
 }
 
 /// Uninitialize the MinHook library. You must call this function **EXACTLY ONCE** at the end of your program.
-#[cfg(all(target_os = "windows", feature = "minhook"))]
+#[cfg(all(windows, feature = "minhook"))]
 pub fn uninitialize() -> Result<()> {
     let status = unsafe { minhook_sys::MH_Uninitialize() };
     if status != MH_OK {
@@ -30,7 +30,7 @@ pub fn uninitialize() -> Result<()> {
 /// Enables all already created hooks.
 ///
 /// This function returns a result indicating wheter the operation finished successfully or not.  
-#[cfg(all(target_os = "windows", feature = "minhook"))]
+#[cfg(all(windows, feature = "minhook"))]
 pub fn enable_hooks() -> Result<()> {
     enable_hook(ptr::null_mut())
 }
@@ -42,7 +42,7 @@ pub fn enable_hooks() -> Result<()> {
 /// * `target` - A pointer to the target function. If this parameter is null, all created hooks are disabled in one go.
 ///
 /// This function returns a result indicating wheter the operation finished successfully or not.
-#[cfg(all(target_os = "windows", feature = "minhook"))]
+#[cfg(all(windows, feature = "minhook"))]
 pub fn enable_hook(target: *mut ()) -> Result<()> {
     let status = unsafe { minhook_sys::MH_EnableHook(target as *mut c_void) };
     if status != MH_OK {
@@ -57,7 +57,7 @@ pub fn enable_hook(target: *mut ()) -> Result<()> {
 /// Disables all already created hooks.
 ///
 /// This function returns a result indicating wheter the operation finished successfully or not.  
-#[cfg(all(target_os = "windows", feature = "minhook"))]
+#[cfg(all(windows, feature = "minhook"))]
 pub fn disable_hooks() -> Result<()> {
     disable_hook(ptr::null_mut())
 }
@@ -69,7 +69,7 @@ pub fn disable_hooks() -> Result<()> {
 /// * `target` - A pointer to the target function. If this parameter is null, all created hooks are disabled in one go.
 ///
 /// This function returns a result indicating wheter the operation finished successfully or not.
-#[cfg(all(target_os = "windows", feature = "minhook"))]
+#[cfg(all(windows, feature = "minhook"))]
 pub fn disable_hook(target: *mut ()) -> Result<()> {
     let status = unsafe { minhook_sys::MH_DisableHook(target as *mut c_void) };
     if status != MH_OK {
@@ -89,7 +89,7 @@ pub fn disable_hook(target: *mut ()) -> Result<()> {
 /// * `detour` - A pointer to the detour function, which will override the target function.
 ///
 /// This function returns a pointer to the trampoline function, which will be used to call the original target function. This parameter can be null.      
-#[cfg(all(target_os = "windows", feature = "minhook"))]
+#[cfg(all(windows, feature = "minhook"))]
 pub fn create_hook(target: *mut (), detour: *mut ()) -> Result<*mut c_void> {
     let memory_info = virtual_query(target)?;
     let is_executable = memory_info.Protect == PAGE_EXECUTE_READWRITE;

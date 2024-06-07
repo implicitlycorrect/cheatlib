@@ -3,7 +3,7 @@ use crate::*;
 #[cfg(feature = "internal")]
 use {std::string::FromUtf8Error, utilities::read_null_terminated_string};
 
-#[cfg(target_os = "windows")]
+#[cfg(windows)]
 use windows_sys::Win32::{Foundation::FARPROC, System::LibraryLoader::GetProcAddress};
 
 macro_rules! page_operation {
@@ -26,8 +26,6 @@ macro_rules! page_operation {
     }};
 }
 
-use page_operation;
-
 #[derive(Default, Debug)]
 pub struct Module {
     pub handle: HMODULE,
@@ -37,17 +35,23 @@ pub struct Module {
 
 impl Module {
     /// # Safety
+    #[cfg(feature = "external")]
     pub unsafe fn get_module_data(&self) -> Vec<u8> {
-        let mut data: Vec<u8> = Vec::with_capacity(self.size);
+        todo!()
+    }
+
+    /// # Safety
+    #[cfg(feature = "internal")]
+    pub unsafe fn get_module_data(&self) -> Vec<u8> {
+        let mut data = Vec::with_capacity(self.size);
         let data_pointer = data.as_mut_ptr();
-        data.set_len(0);
-        ptr::copy_nonoverlapping(self.base_address as *const u8, data_pointer, self.size);
         data.set_len(self.size);
+        ptr::copy(self.base_address as *const u8, data_pointer, self.size);
         data
     }
 }
 
-#[cfg(target_os = "windows")]
+#[cfg(windows)]
 impl Module {
     #[cfg(feature = "internal")]
     pub fn from_name(name: &str) -> Result<Self> {
@@ -68,7 +72,7 @@ impl Module {
         })
     }
 
-    #[cfg(target_os = "windows")]
+    #[inline]
     pub fn get_function_address(&self, function_name: &str) -> FARPROC {
         unsafe { GetProcAddress(self.handle, make_lpcstr(function_name)) }
     }
@@ -107,8 +111,12 @@ impl Module {
             *((self.base_address + address) as *mut T) = value
         })
     }
+    
+    #[cfg(feature = "external")]
+    pub fn read_string(&self, address: usize) -> Result<std::string::String, FromUtf8Error> {
+        todo!()
+    }
 
-    #[inline]
     #[cfg(feature = "internal")]
     pub fn read_string(&self, address: usize) -> Result<std::string::String, FromUtf8Error> {
         unsafe { read_null_terminated_string(self.handle as usize + address) }

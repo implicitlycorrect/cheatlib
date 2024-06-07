@@ -8,7 +8,7 @@ pub use {
     utilities::*,
 };
 
-#[cfg(target_os = "windows")]
+#[cfg(windows)]
 pub use windows::*;
 
 pub mod module;
@@ -16,10 +16,10 @@ pub mod module;
 #[cfg(feature = "patternscan")]
 pub mod patternscan;
 
-#[cfg(all(target_os = "windows", feature = "minhook"))]
+#[cfg(all(windows, feature = "minhook"))]
 pub mod minhook;
 
-#[cfg(target_os = "windows")]
+#[cfg(windows)]
 pub mod windows;
 
 pub mod keyboard;
@@ -28,18 +28,18 @@ pub mod process;
 
 pub mod utilities;
 
-#[cfg(all(target_os = "windows", feature = "internal"))]
+#[cfg(all(windows, feature = "internal"))]
 pub fn allocate_console() -> bool {
     unsafe { windows_sys::Win32::System::Console::AllocConsole().is_positive() }
 }
 
-#[cfg(all(target_os = "windows", feature = "internal"))]
+#[cfg(all(windows, feature = "internal"))]
 pub fn deallocate_console() -> bool {
     unsafe { windows_sys::Win32::System::Console::FreeConsole().is_positive() }
 }
 
 #[macro_export]
-#[cfg(all(target_os = "windows", feature = "internal"))]
+#[cfg(all(windows, feature = "internal"))]
 macro_rules! dll_main {
     ($main:expr) => {
         use cheatlib::{allocate_console, deallocate_console};

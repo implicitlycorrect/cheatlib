@@ -1,6 +1,6 @@
 use module::Module;
 
-//#[cfg(target_os = "windows")]
+//#[cfg(windows)]
 //use windows_sys::Win32::System::Threading::{OpenProcess, PROCESS_ALL_ACCESS};
 
 use crate::*;

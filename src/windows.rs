@@ -1,6 +1,6 @@
 use crate::*;
 
-#[cfg(target_os = "windows")]
+#[cfg(windows)]
 use windows_sys::Win32::{
     Foundation::GetLastError,
     System::{
@@ -12,7 +12,7 @@ use windows_sys::Win32::{
     },
 };
 
-#[cfg(target_os = "windows")]
+#[cfg(windows)]
 pub use windows_sys::Win32::{
     Foundation::{HANDLE, HMODULE},
     System::{
@@ -24,7 +24,7 @@ pub use windows_sys::Win32::{
     },
 };
 
-#[cfg(target_os = "windows")]
+#[cfg(windows)]
 pub fn read_process_memory<T>(
     process_handle: isize,
     address: usize,
@@ -54,7 +54,7 @@ pub fn read_process_memory<T>(
     Ok(())
 }
 
-#[cfg(target_os = "windows")]
+#[cfg(windows)]
 pub fn write_process_memory<T>(
     process_handle: isize,
     address: usize,
@@ -87,7 +87,7 @@ pub fn write_process_memory<T>(
     Ok(())
 }
 
-#[cfg(all(target_os = "windows", feature = "internal"))]
+#[cfg(windows)]
 pub fn get_module_handle(name: &str) -> Result<HMODULE> {
     let module_name = make_lpcstr(name);
     let module_handle = unsafe { GetModuleHandleA(module_name) };
@@ -104,7 +104,7 @@ pub fn get_module_handle(name: &str) -> Result<HMODULE> {
 }
 
 /// # Safety
-#[cfg(target_os = "windows")]
+#[cfg(windows)]
 pub fn get_module_info(module: HMODULE) -> Result<MODULEINFO> {
     let mut module_info = unsafe { mem::zeroed::<MODULEINFO>() };
     if unsafe {
@@ -129,7 +129,7 @@ pub fn get_module_info(module: HMODULE) -> Result<MODULEINFO> {
 }
 
 /// # Safety
-#[cfg(target_os = "windows")]
+#[cfg(windows)]
 pub unsafe fn get_module_data(module_info: MODULEINFO) -> Vec<u8> {
     let mut data: Vec<u8> = Vec::with_capacity(module_info.SizeOfImage as usize);
     let data_ptr = data.as_mut_ptr();
@@ -143,7 +143,7 @@ pub unsafe fn get_module_data(module_info: MODULEINFO) -> Vec<u8> {
     data
 }
 
-#[cfg(target_os = "windows")]
+#[cfg(windows)]
 pub fn virtual_protect(target: *const (), new_protect: u32, old_protect: &mut u32) -> Result<()> {
     if unsafe {
         VirtualProtect(
@@ -166,7 +166,7 @@ pub fn virtual_protect(target: *const (), new_protect: u32, old_protect: &mut u3
     Ok(())
 }
 
-#[cfg(target_os = "windows")]
+#[cfg(windows)]
 pub fn virtual_query(target: *const ()) -> Result<MEMORY_BASIC_INFORMATION> {
     let mut memory_info: MEMORY_BASIC_INFORMATION =
         unsafe { mem::zeroed::<MEMORY_BASIC_INFORMATION>() };
