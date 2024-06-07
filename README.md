@@ -1,12 +1,6 @@
 # cheatlib
 Game hacking crate for windows inspired by [toy-arms](https://github.com/pseuxide/toy-arms)
 
-TODO:
-- [ ] Finish Process struct impl (file: src/process.rs)
-- [ ] Finish Module struct impl (file: src/module.rs) (feature: External)
-- [ ] Add proper documentation
-- [ ] Linux support (maybe one day)
-
 ## Features:
 - internal
 - external
@@ -19,7 +13,20 @@ TODO:
 default = ["internal", "patternscan"]
 ```
 
-## Usage (internal):
+## TODO:
+- [ ] Finish Process struct impl (file: src/process.rs)
+- [ ] Finish Module struct impl (file: src/module.rs) (feature: External)
+- [ ] Add proper documentation
+- [ ] Linux support (maybe one day)
+
+## Usage:
+Cargo.toml
+```toml
+[dependencies]
+cheatlib = { git = "https://github.com/implicitlycorrect/cheatlib" }
+```
+
+## Internal example:
 ```rust
 use anyhow::Result;
 
