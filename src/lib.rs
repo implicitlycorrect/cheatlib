@@ -83,12 +83,17 @@ macro_rules! dll_main {
                         allocate_console();
                     }
 
-                    match $main() {
-                        Ok(()) => println!("exiting"),
-                        Err(error) => eprintln!("error: {error}"),
+                    let result = std::panic::catch_unwind(|| {
+                        if let Err(error) = $main() {
+                            eprintln!("Fatal error occured: {error}");
+                        }
+                    });
+
+                    if !result.is_ok() {
+                        eprintln!("Fatal error occured: {error}");
                     }
 
-                    std::thread::sleep(std::time::Duration::from_secs(1));
+                    std::thread::sleep(std::time::Duration::from_secs(2));
 
                     if ALLOCATE_CONSOLE {
                         deallocate_console();
