@@ -4,17 +4,17 @@ use crate::*;
 use windows_sys::Win32::{
     Foundation::GetLastError,
     System::{
-        Diagnostics::Debug::ReadProcessMemory,
+        Diagnostics::Debug::{ReadProcessMemory, WriteProcessMemory},
         LibraryLoader::GetModuleHandleA,
         Memory::{VirtualProtect, VirtualQuery},
         ProcessStatus::GetModuleInformation,
-        Threading::GetCurrentProcess,
+        Threading::{CreateThread, GetCurrentProcess},
     },
 };
 
 #[cfg(windows)]
 pub use windows_sys::Win32::{
-    Foundation::{BOOL, HANDLE, HINSTANCE, HMODULE},
+    Foundation::{CloseHandle, BOOL, HANDLE, HINSTANCE, HMODULE},
     System::{
         Memory::{
             MEMORY_BASIC_INFORMATION, PAGE_EXECUTE, PAGE_EXECUTE_READ, PAGE_EXECUTE_READWRITE,
@@ -23,6 +23,28 @@ pub use windows_sys::Win32::{
         ProcessStatus::MODULEINFO,
     },
 };
+
+#[cfg(windows)]
+pub fn create_thread(
+    module: HMODULE,
+    function: unsafe extern "system" fn(*mut c_void) -> u32,
+) -> HANDLE {
+    unsafe {
+        CreateThread(
+            ptr::null_mut(),
+            0,
+            Some(function),
+            module as *const c_void,
+            0,
+            ptr::null_mut(),
+        )
+    }
+}
+
+#[cfg(windows)]
+pub fn close_handle(handle: HANDLE) -> bool {
+    (unsafe { CloseHandle(handle) }).is_positive()
+}
 
 #[cfg(windows)]
 pub fn read_process_memory<T>(
@@ -61,8 +83,6 @@ pub fn write_process_memory<T>(
     buffer: *mut T,
     size: usize,
 ) -> Result<()> {
-    use windows_sys::Win32::System::Diagnostics::Debug::WriteProcessMemory;
-
     let success = unsafe {
         WriteProcessMemory(
             process_handle,

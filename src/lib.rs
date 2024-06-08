@@ -66,6 +66,30 @@ macro_rules! dll_main {
     ($main:expr) => {
         use cheatlib::*;
 
+        unsafe extern "system" fn entry(_module: *mut c_void) -> u32 {
+            let console_allocated = ALLOCATE_CONSOLE && allocate_console();
+
+            let result = std::panic::catch_unwind(|| unsafe {
+                if let Err(error) = $main() {
+                    eprintln!("Fatal error occured: {error:?}");
+                }
+            });
+
+            if let Err(error) = result {
+                eprintln!("Fatal error occured: {error:?}");
+            }
+
+            std::thread::sleep(std::time::Duration::from_secs(2));
+
+            if console_allocated {
+                deallocate_console();
+            }
+
+            0
+        }
+
+        static mut THREAD_HANDLE: HANDLE = 0;
+
         #[no_mangle]
         #[allow(non_snake_case, unused_variables)]
         extern "system" fn DllMain(
@@ -74,31 +98,18 @@ macro_rules! dll_main {
             _reserved: *mut c_void,
         ) -> BOOL {
             const DLL_PROCESS_ATTACH: u32 = 1;
+            const DLL_PROCESS_DETACH: u32 = 0;
 
             disable_thread_library_calls(dll_module);
 
-            if call_reason == DLL_PROCESS_ATTACH {
-                std::thread::spawn(|| unsafe {
-                    if ALLOCATE_CONSOLE {
-                        allocate_console();
+            match call_reason {
+                DLL_PROCESS_ATTACH => unsafe { THREAD_HANDLE = create_thread(dll_module, entry) },
+                DLL_PROCESS_DETACH => unsafe {
+                    if THREAD_HANDLE > 0 {
+                        close_handle(THREAD_HANDLE);
                     }
-
-                    let result = std::panic::catch_unwind(|| {
-                        if let Err(error) = $main() {
-                            eprintln!("Fatal error occured: {error}");
-                        }
-                    });
-
-                    if !result.is_ok() {
-                        eprintln!("Fatal error occured: {error}");
-                    }
-
-                    std::thread::sleep(std::time::Duration::from_secs(2));
-
-                    if ALLOCATE_CONSOLE {
-                        deallocate_console();
-                    }
-                });
+                }
+                _ => {}
             }
             1
         }
