@@ -53,7 +53,7 @@ macro_rules! dll_main {
             call_reason: u32,
             _reserved: *const u8,
         ) -> u32 {
-            const DLL_PROCESS_ATTACH: u32 = 0;
+            const DLL_PROCESS_ATTACH: u32 = 1;
             if call_reason == DLL_PROCESS_ATTACH {
                 std::thread::spawn(|| unsafe {
                     let should_allocate_console = cfg!(any(feature = "console", debug_assertions));
