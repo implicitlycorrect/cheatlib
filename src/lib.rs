@@ -31,20 +31,28 @@ pub mod process;
 pub mod utilities;
 
 #[cfg(all(windows, feature = "internal"))]
+pub fn disable_thread_library_calls(module: HMODULE) -> bool {
+    use windows_sys::Win32::System::LibraryLoader::DisableThreadLibraryCalls;
+
+    unsafe { DisableThreadLibraryCalls(module) }.is_positive()
+}
+
+#[cfg(all(windows, feature = "internal"))]
 pub fn allocate_console() -> bool {
-    unsafe { windows_sys::Win32::System::Console::AllocConsole().is_positive() }
+    use windows_sys::Win32::System::Console::AllocConsole;
+    unsafe { AllocConsole().is_positive() }
 }
 
 #[cfg(all(windows, feature = "internal"))]
 pub fn set_console_title(title: &str) -> bool {
-    unsafe {
-        windows_sys::Win32::System::Console::SetConsoleTitleA(make_lpcstr(title)).is_positive()
-    }
+    use windows_sys::Win32::System::Console::SetConsoleTitleA;
+    unsafe { SetConsoleTitleA(make_lpcstr(title)).is_positive() }
 }
 
 #[cfg(all(windows, feature = "internal"))]
 pub fn deallocate_console() -> bool {
-    unsafe { windows_sys::Win32::System::Console::FreeConsole().is_positive() }
+    use windows_sys::Win32::System::Console::FreeConsole;
+    unsafe { FreeConsole().is_positive() }
 }
 
 #[cfg(any(feature = "console", debug_assertions))]
@@ -66,6 +74,9 @@ macro_rules! dll_main {
             _reserved: *mut c_void,
         ) -> BOOL {
             const DLL_PROCESS_ATTACH: u32 = 1;
+
+            disable_thread_library_calls(dll_module);
+
             if call_reason == DLL_PROCESS_ATTACH {
                 std::thread::spawn(|| unsafe {
                     if ALLOCATE_CONSOLE {
