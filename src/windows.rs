@@ -14,7 +14,7 @@ use windows_sys::Win32::{
 
 #[cfg(windows)]
 pub use windows_sys::Win32::{
-    Foundation::{HANDLE, HMODULE},
+    Foundation::{BOOL, HANDLE, HINSTANCE, HMODULE},
     System::{
         Memory::{
             MEMORY_BASIC_INFORMATION, PAGE_EXECUTE, PAGE_EXECUTE_READ, PAGE_EXECUTE_READWRITE,

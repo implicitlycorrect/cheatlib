@@ -36,31 +36,42 @@ pub fn allocate_console() -> bool {
 }
 
 #[cfg(all(windows, feature = "internal"))]
+pub fn set_console_title(title: &str) -> bool {
+    unsafe {
+        windows_sys::Win32::System::Console::SetConsoleTitleA(make_lpcstr(title)).is_positive()
+    }
+}
+
+#[cfg(all(windows, feature = "internal"))]
 pub fn deallocate_console() -> bool {
     unsafe { windows_sys::Win32::System::Console::FreeConsole().is_positive() }
 }
+
+#[cfg(any(feature = "console", debug_assertions))]
+pub static ALLOCATE_CONSOLE: bool = true;
+#[cfg(not(any(feature = "console", debug_assertions)))]
+pub static ALLOCATE_CONSOLE: bool = false;
 
 #[macro_export]
 #[cfg(all(windows, feature = "internal"))]
 macro_rules! dll_main {
     ($main:expr) => {
-        use cheatlib::{allocate_console, deallocate_console};
+        use cheatlib::*;
 
         #[no_mangle]
         #[allow(non_snake_case, unused_variables)]
         extern "system" fn DllMain(
-            dll_module: *const u8,
+            dll_module: HINSTANCE,
             call_reason: u32,
-            _reserved: *const u8,
-        ) -> u32 {
+            _reserved: *mut c_void,
+        ) -> BOOL {
             const DLL_PROCESS_ATTACH: u32 = 1;
             if call_reason == DLL_PROCESS_ATTACH {
                 std::thread::spawn(|| unsafe {
-                    let should_allocate_console = cfg!(any(feature = "console", debug_assertions));
-                    if should_allocate_console && !allocate_console() {
-                        eprintln!("failed to allocate console");
-                        return;
+                    if ALLOCATE_CONSOLE {
+                        allocate_console();
                     }
+
                     match $main() {
                         Ok(()) => println!("exiting"),
                         Err(error) => eprintln!("error: {error}"),
@@ -68,8 +79,8 @@ macro_rules! dll_main {
 
                     std::thread::sleep(std::time::Duration::from_secs(1));
 
-                    if should_allocate_console {
-                        let _ = deallocate_console();
+                    if ALLOCATE_CONSOLE {
+                        deallocate_console();
                     }
                 });
             }
