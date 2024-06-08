@@ -28,7 +28,7 @@ cheatlib = { git = "https://github.com/implicitlycorrect/cheatlib" }
 
 ## Internal example:
 ```rust
-use anyhow::Result;
+use cheatlib::*;
 
 fn main() -> Result<()> {
     println!("hello from DllMain!");

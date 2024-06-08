@@ -5,6 +5,7 @@ pub fn detect_keypress(virtual_key_code: i32) -> bool {
 }
 
 pub struct VirtualKeyCode;
+
 impl VirtualKeyCode {
     pub const VK_LBUTTON: i32 = 0x01;
     pub const VK_RBUTTON: i32 = 0x02;

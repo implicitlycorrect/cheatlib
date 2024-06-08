@@ -3,16 +3,6 @@ use crate::*;
 #[cfg(feature = "internal")]
 use std::string::FromUtf8Error;
 
-pub trait IsNull {
-    fn is_null(self) -> bool;
-}
-
-impl IsNull for usize {
-    fn is_null(self) -> bool {
-        (self as *const usize).is_null()
-    }
-}
-
 #[cfg(windows)]
 pub fn is_page_readable(memory_info: &MEMORY_BASIC_INFORMATION) -> bool {
     use windows_sys::Win32::System::Memory::{MEM_COMMIT, PAGE_NOACCESS};

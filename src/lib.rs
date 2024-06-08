@@ -1,12 +1,14 @@
 pub use {
     crate::module::Module,
     crate::process::Process,
-    anyhow::{anyhow, Result},
+    anyhow::anyhow,
     std::ffi::{c_char, c_void, CStr, CString},
     std::mem,
     std::ptr,
     utilities::*,
 };
+
+pub type Result<T, E = anyhow::Error> = anyhow::Result<T, E>;
 
 #[cfg(windows)]
 pub use windows::*;
