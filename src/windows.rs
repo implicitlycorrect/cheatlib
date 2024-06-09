@@ -258,8 +258,7 @@ pub fn virtual_protect(target: *const (), new_protect: u32, old_protect: &mut u3
             new_protect,
             old_protect,
         )
-    }
-    .is_negative()
+    } == FALSE
     {
         let error_code = unsafe { GetLastError() };
         let error_message = format!(
