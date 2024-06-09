@@ -1,5 +1,8 @@
 use crate::*;
 
+use windows_sys::Win32::System::Diagnostics::ToolHelp::{
+    Module32First, Module32Next, MODULEENTRY32, TH32CS_SNAPMODULE,
+};
 #[cfg(windows)]
 use windows_sys::Win32::{
     Foundation::GetLastError,
@@ -20,7 +23,9 @@ use windows_sys::Win32::{
 
 #[cfg(windows)]
 pub use windows_sys::Win32::{
-    Foundation::{CloseHandle, BOOL, HANDLE, HINSTANCE, HMODULE, INVALID_HANDLE_VALUE},
+    Foundation::{
+        CloseHandle, BOOL, FALSE, HANDLE, HINSTANCE, HMODULE, INVALID_HANDLE_VALUE, TRUE,
+    },
     System::{
         Diagnostics::ToolHelp::PROCESSENTRY32,
         Memory::{
@@ -34,9 +39,9 @@ pub use windows_sys::Win32::{
 #[cfg(windows)]
 pub fn create_toolhelp32_snapshot(
     flags: CREATE_TOOLHELP_SNAPSHOT_FLAGS,
-    process_id: usize,
+    process_id: u32,
 ) -> Option<HANDLE> {
-    let snapshot = unsafe { CreateToolhelp32Snapshot(flags, process_id as u32) };
+    let snapshot = unsafe { CreateToolhelp32Snapshot(flags, process_id) };
     if snapshot == INVALID_HANDLE_VALUE {
         return None;
     }
@@ -47,35 +52,65 @@ pub fn create_toolhelp32_snapshot(
 pub fn get_process_entry_by_name(name: &str) -> Option<PROCESSENTRY32> {
     let snapshot = create_toolhelp32_snapshot(TH32CS_SNAPPROCESS, 0)?;
 
-    unsafe {
-        let mut entry = mem::zeroed::<PROCESSENTRY32>();
-        entry.dwSize = mem::size_of::<PROCESSENTRY32>() as u32;
+    let mut entry = unsafe { mem::zeroed::<PROCESSENTRY32>() };
+    entry.dwSize = mem::size_of::<PROCESSENTRY32>() as u32;
 
-        let mut found = false;
+    if unsafe { Process32First(snapshot, &mut entry) } <= 0 {
+        return None;
+    }
 
-        if Process32First(snapshot, &mut entry) > 0 {
-            let process_name = String::from_utf8_lossy(&entry.szExeFile);
-            if process_name == name {
-                found = true;
-            }
+    let found = loop {
+        let process_name = unsafe { read_null_terminated_string(entry.szExeFile.as_ptr()) };
+        if process_name == name {
+            break true;
         }
 
-        while !found && Process32Next(snapshot, &mut entry) > 0 {
-            let process_name = String::from_utf8_lossy(&entry.szExeFile);
-            if process_name == name {
-                found = true;
-                break;
-            }
+        if unsafe { Process32Next(snapshot, &mut entry) } <= 0 {
+            break false;
         }
+    };
 
-        close_handle(snapshot);
+    close_handle(snapshot);
 
-        if found {
-            Some(entry)
-        } else {
-            None
+    if found {
+        Some(entry)
+    } else {
+        None
+    }
+}
+
+pub fn get_process_modules(process: (HANDLE, u32)) -> Vec<Module> {
+    let mut modules = vec![];
+
+    let (process_handle, process_id) = process;
+    let Some(snapshot) = create_toolhelp32_snapshot(TH32CS_SNAPMODULE, process_id) else {
+        return modules;
+    };
+
+    let mut entry = unsafe { mem::zeroed::<MODULEENTRY32>() };
+    entry.dwSize = mem::size_of::<MODULEENTRY32>() as u32;
+
+    if unsafe { Module32First(snapshot, &mut entry) } == FALSE {
+        return modules;
+    }
+
+    loop {
+        modules.push(Module {
+            name: unsafe { read_null_terminated_string(entry.szModule.as_ptr()) }.to_string(),
+            process_handle,
+            handle: entry.hModule,
+            size: entry.dwSize as usize,
+            base_address: entry.modBaseAddr as usize,
+        });
+
+        if unsafe { Module32Next(snapshot, &mut entry) } == FALSE {
+            break;
         }
     }
+
+    close_handle(snapshot);
+
+    modules
 }
 
 #[cfg(windows)]
@@ -186,8 +221,7 @@ pub fn get_module_info(module: HMODULE) -> Result<MODULEINFO> {
             &mut module_info,
             mem::size_of::<MODULEINFO>() as u32,
         )
-    }
-    .is_negative()
+    } == FALSE
     {
         let error_code = unsafe { GetLastError() };
         let error_message = format!(

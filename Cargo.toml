@@ -28,7 +28,7 @@ anyhow = "1.0"
 smartstring = "1.0"
 
 [features]
-default = ["external"]
+default = ["internal"]
 minhook = ["dep:minhook-sys"]
 internal = []
 external = []
