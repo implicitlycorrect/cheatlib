@@ -36,3 +36,9 @@ impl Process {
         ))
     }
 }
+
+impl Drop for Process {
+    fn drop(&mut self) {
+        close_handle(self.handle);
+    }
+}

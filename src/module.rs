@@ -119,3 +119,9 @@ impl Module {
         })
     }
 }
+
+impl Drop for Module {
+    fn drop(&mut self) {
+        close_handle(self.handle);
+    }
+}
