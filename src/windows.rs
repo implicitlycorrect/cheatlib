@@ -4,7 +4,13 @@ use crate::*;
 use windows_sys::Win32::{
     Foundation::GetLastError,
     System::{
-        Diagnostics::Debug::{ReadProcessMemory, WriteProcessMemory},
+        Diagnostics::{
+            Debug::{ReadProcessMemory, WriteProcessMemory},
+            ToolHelp::{
+                CreateToolhelp32Snapshot, Process32First, Process32Next,
+                CREATE_TOOLHELP_SNAPSHOT_FLAGS, TH32CS_SNAPPROCESS,
+            },
+        },
         LibraryLoader::GetModuleHandleA,
         Memory::{VirtualProtect, VirtualQuery},
         ProcessStatus::GetModuleInformation,
@@ -14,8 +20,9 @@ use windows_sys::Win32::{
 
 #[cfg(windows)]
 pub use windows_sys::Win32::{
-    Foundation::{CloseHandle, BOOL, HANDLE, HINSTANCE, HMODULE},
+    Foundation::{CloseHandle, BOOL, HANDLE, HINSTANCE, HMODULE, INVALID_HANDLE_VALUE},
     System::{
+        Diagnostics::ToolHelp::PROCESSENTRY32,
         Memory::{
             MEMORY_BASIC_INFORMATION, PAGE_EXECUTE, PAGE_EXECUTE_READ, PAGE_EXECUTE_READWRITE,
             PAGE_READONLY, PAGE_READWRITE,
@@ -23,6 +30,53 @@ pub use windows_sys::Win32::{
         ProcessStatus::MODULEINFO,
     },
 };
+
+#[cfg(windows)]
+pub fn create_toolhelp32_snapshot(
+    flags: CREATE_TOOLHELP_SNAPSHOT_FLAGS,
+    process_id: usize,
+) -> Option<HANDLE> {
+    let snapshot = unsafe { CreateToolhelp32Snapshot(flags, process_id as u32) };
+    if snapshot == INVALID_HANDLE_VALUE {
+        return None;
+    }
+    Some(snapshot)
+}
+
+#[cfg(windows)]
+pub fn get_process_entry_by_name(name: &str) -> Option<PROCESSENTRY32> {
+    let snapshot = create_toolhelp32_snapshot(TH32CS_SNAPPROCESS, 0)?;
+
+    unsafe {
+        let mut entry = mem::zeroed::<PROCESSENTRY32>();
+        entry.dwSize = mem::size_of::<PROCESSENTRY32>() as u32;
+
+        let mut found = false;
+
+        if Process32First(snapshot, &mut entry) > 0 {
+            let process_name = String::from_utf8_lossy(&entry.szExeFile);
+            if process_name == name {
+                found = true;
+            }
+        }
+
+        while !found && Process32Next(snapshot, &mut entry) > 0 {
+            let process_name = String::from_utf8_lossy(&entry.szExeFile);
+            if process_name == name {
+                found = true;
+                break;
+            }
+        }
+
+        close_handle(snapshot);
+
+        if found {
+            Some(entry)
+        } else {
+            None
+        }
+    }
+}
 
 #[cfg(windows)]
 pub fn create_thread(
@@ -43,7 +97,7 @@ pub fn create_thread(
 
 #[cfg(windows)]
 pub fn close_handle(handle: HANDLE) -> bool {
-    (unsafe { CloseHandle(handle) }).is_positive()
+    (unsafe { CloseHandle(handle) }) > 0
 }
 
 #[cfg(windows)]
@@ -60,8 +114,7 @@ pub fn read_process_memory<T>(
             buffer as *mut c_void,
             size,
             ptr::null_mut(),
-        )
-        .is_positive()
+        ) > 0
     };
     if !success {
         let error_code = unsafe { GetLastError() };
@@ -91,8 +144,7 @@ pub fn write_process_memory<T>(
             size,
             ptr::null_mut(),
         )
-    }
-    .is_positive();
+    } > 0;
 
     if !success {
         let error_code = unsafe { GetLastError() };

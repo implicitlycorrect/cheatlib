@@ -1,8 +1,5 @@
 use crate::*;
 
-#[cfg(feature = "internal")]
-use {std::string::FromUtf8Error, utilities::read_null_terminated_string};
-
 #[cfg(windows)]
 use windows_sys::Win32::{Foundation::FARPROC, System::LibraryLoader::GetProcAddress};
 
@@ -26,18 +23,21 @@ macro_rules! page_operation {
     }};
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Clone, Debug)]
 pub struct Module {
+    pub name: String,
+    pub process_handle: HANDLE,
     pub handle: HMODULE,
     pub size: usize,
     pub base_address: usize,
 }
 
 impl Module {
-    /// # Safety
     #[cfg(feature = "external")]
-    pub unsafe fn get_module_data(&self) -> Vec<u8> {
-        todo!()
+    pub fn get_module_data(&self) -> Result<Vec<u8>> {
+        let mut data: Vec<u8> = Vec::with_capacity(self.size);
+        self.read(self.base_address, data.as_mut_ptr() as *mut Vec<u8>)?;
+        Ok(data)
     }
 
     /// # Safety
@@ -56,16 +56,18 @@ impl Module {
     #[cfg(feature = "internal")]
     pub fn from_name(name: &str) -> Result<Self> {
         let module_handle = get_module_handle(name)?;
-        Self::from_handle(module_handle)
+        Self::from_handle(None, module_handle)
     }
 
-    pub fn from_handle(module_handle: HMODULE) -> Result<Self> {
+    pub fn from_handle(process_handle: Option<HANDLE>, module_handle: HMODULE) -> Result<Self> {
         let module_info = get_module_info(module_handle)?;
 
         let size = module_info.SizeOfImage as usize;
         let base_address = module_info.lpBaseOfDll as usize;
 
         Ok(Self {
+            name: String::new(),
+            process_handle: process_handle.unwrap_or_default(),
             handle: module_handle,
             size,
             base_address,
@@ -78,21 +80,26 @@ impl Module {
     }
 
     #[cfg(feature = "external")]
-    pub fn read<T>(&self, process_handle: HANDLE, address: usize, buffer: *mut T) -> Result<()> {
+    pub fn read<T>(&self, address: usize, buffer: *mut T) -> Result<()> {
         page_operation!(
             address,
             PAGE_READWRITE,
-            read_process_memory(process_handle, address, buffer, mem::size_of::<T>())?
+            read_process_memory(self.process_handle, address, buffer, mem::size_of::<T>())?
         )
     }
 
     #[cfg(feature = "external")]
-    pub fn write<T>(&self, process_handle: HANDLE, address: usize, value: T) -> Result<()> {
+    pub fn write<T>(&self, address: usize, value: T) -> Result<()> {
         let mut value = value;
         page_operation!(
             address,
             PAGE_READWRITE,
-            write_process_memory(process_handle, address, &mut value, mem::size_of::<T>())?
+            write_process_memory(
+                self.process_handle,
+                address,
+                &mut value,
+                mem::size_of::<T>()
+            )?
         )
     }
 
@@ -110,15 +117,5 @@ impl Module {
         page_operation!(address, PAGE_READWRITE, unsafe {
             *((self.base_address + address) as *mut T) = value
         })
-    }
-
-    #[cfg(feature = "external")]
-    pub fn read_string(&self, address: usize) -> Result<std::string::String, FromUtf8Error> {
-        todo!()
-    }
-
-    #[cfg(feature = "internal")]
-    pub fn read_string(&self, address: usize) -> Result<std::string::String, FromUtf8Error> {
-        unsafe { read_null_terminated_string(self.handle as usize + address) }
     }
 }

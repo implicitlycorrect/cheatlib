@@ -15,7 +15,6 @@ pub use windows::*;
 
 pub mod module;
 
-#[cfg(feature = "patternscan")]
 pub mod patternscan;
 
 #[cfg(all(windows, feature = "minhook"))]
@@ -34,25 +33,25 @@ pub mod utilities;
 pub fn disable_thread_library_calls(module: HMODULE) -> bool {
     use windows_sys::Win32::System::LibraryLoader::DisableThreadLibraryCalls;
 
-    unsafe { DisableThreadLibraryCalls(module) }.is_positive()
+    unsafe { DisableThreadLibraryCalls(module) > 0 }
 }
 
 #[cfg(all(windows, feature = "internal"))]
 pub fn allocate_console() -> bool {
     use windows_sys::Win32::System::Console::AllocConsole;
-    unsafe { AllocConsole().is_positive() }
+    unsafe { AllocConsole() > 0 }
 }
 
 #[cfg(all(windows, feature = "internal"))]
 pub fn set_console_title(title: &str) -> bool {
     use windows_sys::Win32::System::Console::SetConsoleTitleA;
-    unsafe { SetConsoleTitleA(make_lpcstr(title)).is_positive() }
+    unsafe { SetConsoleTitleA(make_lpcstr(title)) > 0 }
 }
 
 #[cfg(all(windows, feature = "internal"))]
 pub fn deallocate_console() -> bool {
     use windows_sys::Win32::System::Console::FreeConsole;
-    unsafe { FreeConsole().is_positive() }
+    unsafe { FreeConsole() > 0 }
 }
 
 #[cfg(any(feature = "console", debug_assertions))]
@@ -108,7 +107,7 @@ macro_rules! dll_main {
                     if THREAD_HANDLE > 0 {
                         close_handle(THREAD_HANDLE);
                     }
-                }
+                },
                 _ => {}
             }
             1
