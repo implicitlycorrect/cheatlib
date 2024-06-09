@@ -5,7 +5,6 @@ Game hacking crate for windows inspired by [toy-arms](https://github.com/pseuxid
 - internal
 - external
 - minhook | enables function hooking via the [minhook_sys](https://docs.rs/minhook-sys) crate
-- console | add on for internal feature that makes dll_main! macro allocate and deallocate a console before calling the provided function
 
 ### Default Features:
 ```toml
@@ -30,6 +29,7 @@ cheatlib = { git = "https://github.com/implicitlycorrect/cheatlib" }
 use cheatlib::*;
 
 fn main() -> Result<()> {
+    // cheatlib manages the console for debug builds
     println!("hello from DllMain!");
     Ok(())
 }

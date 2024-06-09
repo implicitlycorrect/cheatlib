@@ -54,10 +54,7 @@ pub fn deallocate_console() -> bool {
     unsafe { FreeConsole() > 0 }
 }
 
-#[cfg(any(feature = "console", debug_assertions))]
-pub static ALLOCATE_CONSOLE: bool = true;
-#[cfg(not(any(feature = "console", debug_assertions)))]
-pub static ALLOCATE_CONSOLE: bool = false;
+pub static ALLOCATE_CONSOLE: bool = cfg!(debug_assertions);
 
 #[macro_export]
 #[cfg(all(windows, feature = "internal"))]

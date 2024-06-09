@@ -32,4 +32,3 @@ default = ["internal"]
 minhook = ["dep:minhook-sys"]
 internal = []
 external = []
-console = [] # addon feature for internal that makes dll_main! macro also allocate and deallocate a console in the generated DllMain function
