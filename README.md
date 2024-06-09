@@ -29,12 +29,11 @@ cheatlib = { git = "https://github.com/implicitlycorrect/cheatlib" }
 use cheatlib::*;
 
 fn main() -> Result<()> {
-    // cheatlib manages the console for debug builds
     println!("hello from DllMain!");
     Ok(())
 }
 
-dll_main!(main);
+dll_main!(main, true); // fn() -> Result<()>, allocate_console: bool
 ```
 For a more detailed internal example there is [blaze](https://github.com/implicitlycorrect/blaze)
 

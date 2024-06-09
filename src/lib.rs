@@ -54,16 +54,14 @@ pub fn deallocate_console() -> bool {
     unsafe { FreeConsole() > 0 }
 }
 
-pub static ALLOCATE_CONSOLE: bool = cfg!(debug_assertions);
-
 #[macro_export]
 #[cfg(all(windows, feature = "internal"))]
 macro_rules! dll_main {
-    ($main:expr) => {
+    ($main:expr,$allocate_console:expr) => {
         use cheatlib::*;
 
         unsafe extern "system" fn entry(_module: *mut c_void) -> u32 {
-            let console_allocated = ALLOCATE_CONSOLE && allocate_console();
+            let console_allocated = $allocate_console && allocate_console();
 
             let result = std::panic::catch_unwind(|| unsafe {
                 if let Err(error) = $main() {
