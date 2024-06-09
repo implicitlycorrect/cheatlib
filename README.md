@@ -34,7 +34,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-cheatlib::dll_main!(main);
+dll_main!(main);
 ```
 For a more detailed internal example there is [blaze](https://github.com/implicitlycorrect/blaze)
 
