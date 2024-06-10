@@ -15,9 +15,9 @@ use windows_sys::Win32::{
             },
         },
         LibraryLoader::GetModuleHandleA,
-        Memory::{VirtualProtect, VirtualQuery},
+        Memory::{VirtualAllocEx, VirtualProtect, VirtualQuery, MEM_COMMIT, MEM_RESERVE},
         ProcessStatus::GetModuleInformation,
-        Threading::{CreateThread, GetCurrentProcess},
+        Threading::{CreateRemoteThread, CreateThread, GetCurrentProcess},
     },
 };
 
@@ -210,7 +210,6 @@ pub fn get_module_handle(name: &str) -> Result<HMODULE> {
     Ok(module_handle)
 }
 
-/// # Safety
 #[cfg(windows)]
 pub fn get_module_info(module: HMODULE) -> Result<MODULEINFO> {
     let mut module_info = unsafe { mem::zeroed::<MODULEINFO>() };
@@ -236,6 +235,30 @@ pub fn get_module_info(module: HMODULE) -> Result<MODULEINFO> {
 
 /// # Safety
 #[cfg(windows)]
+pub unsafe fn create_remote_thread(
+    process_handle: HANDLE,
+    start_address: *const c_void,
+) -> Result<HANDLE> {
+    type StartRoutine =
+        unsafe extern "system" fn(lpthreadparameter: *mut ::core::ffi::c_void) -> u32;
+
+    let thread_handle = CreateRemoteThread(
+        process_handle,
+        ptr::null_mut(),
+        0,
+        Some(mem::transmute::<*const c_void, StartRoutine>(start_address)),
+        ptr::null_mut(),
+        0,
+        ptr::null_mut(),
+    );
+    if thread_handle <= 0 {
+        return Err(anyhow!("Failed to create remote thread"));
+    }
+    Ok(thread_handle)
+}
+
+/// # Safety
+#[cfg(windows)]
 pub unsafe fn get_module_data(module_info: MODULEINFO) -> Vec<u8> {
     let mut data: Vec<u8> = Vec::with_capacity(module_info.SizeOfImage as usize);
     let data_ptr = data.as_mut_ptr();
@@ -247,6 +270,24 @@ pub unsafe fn get_module_data(module_info: MODULEINFO) -> Vec<u8> {
     );
     data.set_len(module_info.SizeOfImage as usize);
     data
+}
+
+#[cfg(windows)]
+pub fn virtual_alloc_ex(process_handle: HANDLE, size: usize) -> Result<*mut c_void> {
+    let remote_memory = unsafe {
+        VirtualAllocEx(
+            process_handle,
+            ptr::null_mut(),
+            size,
+            MEM_COMMIT | MEM_RESERVE,
+            PAGE_EXECUTE_READWRITE,
+        )
+    };
+
+    if remote_memory.is_null() {
+        return Err(anyhow!("Failed to allocate memory in remote process"));
+    }
+    Ok(remote_memory)
 }
 
 #[cfg(windows)]
