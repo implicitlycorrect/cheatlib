@@ -107,7 +107,9 @@ macro_rules! dll_main {
                         close_handle(thread_handle);
                     }
                 } else {
-                    entry(ptr::null_mut());
+                    unsafe {
+                        entry(ptr::null_mut());
+                    }
                 }
             }
             TRUE
