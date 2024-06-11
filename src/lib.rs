@@ -8,7 +8,8 @@ pub use {
     utilities::*,
 };
 
-pub type Result<T, E = anyhow::Error> = anyhow::Result<T, E>;
+pub type Error = anyhow::Error;
+pub type Result<T, E = Error> = anyhow::Result<T, E>;
 
 #[cfg(windows)]
 pub use windows::*;
