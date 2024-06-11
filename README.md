@@ -33,7 +33,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-dll_main!(main, true); // fn() -> Result<()>, allocate_console: bool
+dll_main!(main, true, true); // dll_main!($main: fn() -> Result<()>, $allocate_console: bool, $create_thread: bool);
 ```
 For a more detailed internal example there is [blaze](https://github.com/implicitlycorrect/blaze)
 
