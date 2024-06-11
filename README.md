@@ -28,12 +28,14 @@ cheatlib = { git = "https://github.com/implicitlycorrect/cheatlib" }
 ```rust
 use cheatlib::*;
 
-fn main() -> Result<()> {
+fn main() {
+    allocate_console();
     println!("hello from DllMain!");
-    Ok(())
+    std::thread::sleep(std::time::Duration::from_secs(1));
+    deallocate_console();
 }
 
-dll_main!(main, true); // dll_main!($main: fn() -> Result<()>, $create_thread: bool);
+dll_main!(main); // dll_main!($main: fn());
 ```
 For a more detailed internal example there is [blaze](https://github.com/implicitlycorrect/blaze)
 
