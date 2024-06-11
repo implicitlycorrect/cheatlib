@@ -54,26 +54,29 @@ pub fn deallocate_console() -> bool {
     unsafe { FreeConsole() > 0 }
 }
 
-/// This macro defines a DLL entry point (`DllMain`) for a Windows DLL with options for 
+/// This macro defines a DLL entry point (`DllMain`) for a Windows DLL with options for
 /// allocating a console and creating a separate thread for the main function.
 ///
 /// # Parameters
 /// - `$main`: The main function to be executed when the DLL is attached.
 ///   It should return a `Result<()>` indicating success or an error.
-/// - `$create_thread`: A boolean literal indicating whether to create a separate thread 
+/// - `$create_thread`: A boolean literal indicating whether to create a separate thread
 ///   to run the main function.
 ///
 /// # Usage
 /// ```
 /// dll_main!(my_main_function, true);
 /// ```
-/// This will define a `DllMain` function that runs 
+/// This will define a `DllMain` function that runs
 /// `my_main_function` in a new thread when the DLL is attached.
 #[macro_export]
 #[cfg(all(windows, feature = "internal"))]
 macro_rules! dll_main {
     ($main:expr, $create_thread:literal) => {
-        use cheatlib::{allocate_console, c_void, close_handle, create_thread, deallocate_console, disable_thread_library_calls, BOOL, HINSTANCE};
+        use cheatlib::{
+            allocate_console, c_void, close_handle, create_thread, deallocate_console,
+            disable_thread_library_calls, BOOL, HINSTANCE,
+        };
 
         unsafe extern "system" fn entry(_module: *mut c_void) -> u32 {
             let result = std::panic::catch_unwind(|| {
@@ -85,8 +88,6 @@ macro_rules! dll_main {
             if let Err(error) = result {
                 eprintln!("Fatal error occurred: {:?}", error);
             }
-
-            std::thread::sleep(std::time::Duration::from_secs(2));
 
             0
         }
