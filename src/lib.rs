@@ -68,7 +68,7 @@ pub fn deallocate_console() -> bool {
 #[macro_export]
 #[cfg(all(windows, feature = "internal"))]
 macro_rules! dll_main {
-    ($main:expr, $create_thread:literal) => {
+    ($main:expr) => {
         use cheatlib::{c_void, disable_thread_library_calls, BOOL, HINSTANCE};
 
         #[no_mangle]
