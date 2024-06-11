@@ -60,20 +60,19 @@ pub fn deallocate_console() -> bool {
 /// # Parameters
 /// - `$main`: The main function to be executed when the DLL is attached.
 ///   It should return a `Result<()>` indicating success or an error.
-/// - `$allocate_console`: A boolean literal indicating whether to allocate a console.
 /// - `$create_thread`: A boolean literal indicating whether to create a separate thread 
 ///   to run the main function.
 ///
 /// # Usage
 /// ```
-/// dll_main!(my_main_function, true, true);
+/// dll_main!(my_main_function, true);
 /// ```
-/// This will define a `DllMain` function that allocates a console and runs 
+/// This will define a `DllMain` function that runs 
 /// `my_main_function` in a new thread when the DLL is attached.
 #[macro_export]
 #[cfg(all(windows, feature = "internal"))]
 macro_rules! dll_main {
-    ($main:expr, $allocate_console:literal, $create_thread:literal) => {
+    ($main:expr, $create_thread:literal) => {
         use cheatlib::{allocate_console, c_void, close_handle, create_thread, deallocate_console, disable_thread_library_calls, BOOL, HINSTANCE};
 
         unsafe extern "system" fn entry(_module: *mut c_void) -> u32 {
@@ -100,33 +99,18 @@ macro_rules! dll_main {
             _reserved: *mut c_void,
         ) -> BOOL {
             const DLL_PROCESS_ATTACH: u32 = 1;
-            const DLL_PROCESS_DETACH: u32 = 0;
-
-            disable_thread_library_calls(dll_module);
-
-            match call_reason {
-                DLL_PROCESS_ATTACH => unsafe {
-                    if $allocate_console {
-                        allocate_console();
+            if call_reason == DLL_PROCESS_ATTACH {
+                disable_thread_library_calls(dll_module);
+                if $create_thread {
+                    let thread_handle = create_thread(dll_module, entry);
+                    if thread_handle > 0 {
+                        close_handle(thread_handle);
                     }
-
-                    if $create_thread {
-                        let thread_handle = create_thread(dll_module, entry);
-                        if thread_handle > 0 {
-                            close_handle(thread_handle);
-                        }
-                    } else {
-                        entry(ptr::null_mut());
-                    }
-                },
-                DLL_PROCESS_DETACH => unsafe {
-                    if $allocate_console {
-                        deallocate_console();
-                    }
-                },
-                _ => {}
+                } else {
+                    entry(ptr::null_mut());
+                }
             }
-            1
+            TRUE
         }
     };
 }
