@@ -54,35 +54,43 @@ pub fn deallocate_console() -> bool {
     unsafe { FreeConsole() > 0 }
 }
 
+/// This macro defines a DLL entry point (`DllMain`) for a Windows DLL with options for 
+/// allocating a console and creating a separate thread for the main function.
+///
+/// # Parameters
+/// - `$main`: The main function to be executed when the DLL is attached.
+///   It should return a `Result<()>` indicating success or an error.
+/// - `$allocate_console`: A boolean literal indicating whether to allocate a console.
+/// - `$create_thread`: A boolean literal indicating whether to create a separate thread 
+///   to run the main function.
+///
+/// # Usage
+/// ```
+/// dll_main!(my_main_function, true, true);
+/// ```
+/// This will define a `DllMain` function that allocates a console and runs 
+/// `my_main_function` in a new thread when the DLL is attached.
 #[macro_export]
 #[cfg(all(windows, feature = "internal"))]
 macro_rules! dll_main {
-    ($main:expr,$allocate_console:expr) => {
-        use cheatlib::*;
+    ($main:expr, $allocate_console:literal, $create_thread:literal) => {
+        use cheatlib::{allocate_console, c_void, close_handle, create_thread, deallocate_console, disable_thread_library_calls, BOOL, HINSTANCE};
 
         unsafe extern "system" fn entry(_module: *mut c_void) -> u32 {
-            let console_allocated = $allocate_console && allocate_console();
-
-            let result = std::panic::catch_unwind(|| unsafe {
+            let result = std::panic::catch_unwind(|| {
                 if let Err(error) = $main() {
-                    eprintln!("Fatal error occured: {error:?}");
+                    eprintln!("Fatal error occurred: {:?}", error);
                 }
             });
 
             if let Err(error) = result {
-                eprintln!("Fatal error occured: {error:?}");
+                eprintln!("Fatal error occurred: {:?}", error);
             }
 
             std::thread::sleep(std::time::Duration::from_secs(2));
 
-            if console_allocated {
-                deallocate_console();
-            }
-
             0
         }
-
-        static mut THREAD_HANDLE: HANDLE = 0;
 
         #[no_mangle]
         #[allow(non_snake_case, unused_variables)]
@@ -97,10 +105,23 @@ macro_rules! dll_main {
             disable_thread_library_calls(dll_module);
 
             match call_reason {
-                DLL_PROCESS_ATTACH => unsafe { THREAD_HANDLE = create_thread(dll_module, entry) },
+                DLL_PROCESS_ATTACH => unsafe {
+                    if $allocate_console {
+                        allocate_console();
+                    }
+
+                    if $create_thread {
+                        let thread_handle = create_thread(dll_module, entry);
+                        if thread_handle > 0 {
+                            close_handle(thread_handle);
+                        }
+                    } else {
+                        entry(ptr::null_mut());
+                    }
+                },
                 DLL_PROCESS_DETACH => unsafe {
-                    if THREAD_HANDLE > 0 {
-                        close_handle(THREAD_HANDLE);
+                    if $allocate_console {
+                        deallocate_console();
                     }
                 },
                 _ => {}
